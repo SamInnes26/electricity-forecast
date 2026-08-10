@@ -107,25 +107,7 @@ demand_historic_data <- fromJSON(
 
 ##### OCTOPUS API GAS & ELECTRIC DOWNLOAD #####
 
-# elec <- request(
-#   "https://api.octopus.energy/v1/products/SILVER-26-04-01/electricity-tariffs/E-1R-SILVER-26-04-01-K/standard-unit-rates/"
-#   ) |>
-#   req_perform() |>
-#   resp_body_json()
-
-elec <- fromJSON(
-  "https://api.octopus.energy/v1/products/SILVER-26-04-01/electricity-tariffs/E-1R-SILVER-26-04-01-K/standard-unit-rates/"
-)
-
-today <- Sys.Date()
-
-elec_today <- subset(
-  elec$results,
-  as.Date(valid_from) <= today &
-    as.Date(valid_to) >= today
-)
-
-elec_rate <- elec_today$value_inc_vat[1]
+# PULL LATEST TRACKER RATES #
 
 elec_sc <- fromJSON(
   "https://api.octopus.energy/v1/products/SILVER-26-04-01/electricity-tariffs/E-1R-SILVER-26-04-01-K/standing-charges/"
@@ -133,24 +115,64 @@ elec_sc <- fromJSON(
 
 elec_standing_charge <- elec_sc$results$value_inc_vat[1]
 
+elec <- request(
+  "https://api.octopus.energy/v1/products/SILVER-26-04-01/electricity-tariffs/E-1R-SILVER-26-04-01-K/standard-unit-rates/"
+) %>% 
+  req_perform() %>% 
+  resp_body_json()
 
-gas <- fromJSON(
-  "https://api.octopus.energy/v1/products/SILVER-26-04-01/gas-tariffs/G-1R-SILVER-26-04-01-K/standard-unit-rates/"
-)
+rates_e <- bind_rows(elec$results)
 
-gas_today <- subset(
-  gas$results,
-  as.Date(valid_from) <= today &
-    as.Date(valid_to) >= today
-)
-
-gas_rate <- gas_today$value_inc_vat[1]
+rates_e <- rates_e %>% 
+  transmute(
+    valid_from = ymd_hms(valid_from),
+    valid_to = ymd_hms(valid_to),
+    date = as.Date(valid_from + (valid_to - valid_from) / 2),
+    elec_unit_rate = value_inc_vat,
+  ) %>% 
+  select(date, elec_unit_rate) %>% 
+  mutate(elec_standing_charge = elec_standing_charge)
 
 gas_sc <- fromJSON(
   "https://api.octopus.energy/v1/products/SILVER-26-04-01/gas-tariffs/G-1R-SILVER-26-04-01-K/standing-charges/"
 )
 
 gas_standing_charge <- gas_sc$results$value_inc_vat[1]
+
+gas <- request(
+  "https://api.octopus.energy/v1/products/SILVER-26-04-01/gas-tariffs/G-1R-SILVER-26-04-01-K/standard-unit-rates/"
+) %>% 
+  req_perform() %>% 
+  resp_body_json()
+
+rates_g <- bind_rows(gas$results)
+
+rates_g <- rates_g %>% 
+  transmute(
+    valid_from = ymd_hms(valid_from),
+    valid_to = ymd_hms(valid_to),
+    date = as.Date(valid_from + (valid_to - valid_from) / 2),
+    gas_unit_rate = value_inc_vat,
+  ) %>% 
+  select(date, gas_unit_rate) %>% 
+  mutate(gas_standing_charge = gas_standing_charge)
+
+rates <- rates_e %>% 
+  left_join(rates_g, by = "date") %>% 
+  filter(date >= dmy("01/08/2026")) %>% 
+  drop_na() %>% 
+  arrange(date)
+
+# CHECK EXISTING DATE RANGE & REMOVE OVERALP FROM DOWNLOADED DATA #
+
+current_tracker_data <- read.csv("data/tracker_price_history.csv")
+
+current_latest_date <- ymd(current_tracker_data$date[nrow(current_tracker_data)])
+
+rates_to_be_appended <- rates %>% 
+  filter(
+    date > current_latest_date
+  )
 
 ##### DATA CLEANING #####
 
@@ -229,12 +251,13 @@ today_prices <- data.frame(
 )
 
 write.table(
-  today_prices,
+  rates_to_be_appended,
   "data/tracker_price_history.csv",
   sep = ",",
+  # col.names = c("date","elec_unit_rate","elec_standing_charge","gas_unit_rate","gas_standing_charge"), # from creating original dataset - ignore
+  col.names = F,
   row.names = FALSE,
-  col.names = FALSE,
-  append = TRUE
+  append = T
 )
 
 demand_wind_2_14_da <- demand_2_14_da %>% 
