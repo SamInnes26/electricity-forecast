@@ -8,8 +8,8 @@ required_packages <- c(
   "httr",
   "lubridate",
   "httr2",
-  "tidyverse",
-  # "rsconnect"
+  # "rsconnect",
+  "tidyverse"
 )
 
 missing_packages <- required_packages[
