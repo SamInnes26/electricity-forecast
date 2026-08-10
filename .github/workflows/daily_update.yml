@@ -1,1 +1,40 @@
+name: Daily forecast update
 
+on:
+  schedule:
+    - cron: "0 10 * * *"   # 11am BST
+
+  workflow_dispatch:
+
+jobs:
+  update-forecast:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install required packages
+        run: Rscript setup.R
+
+      - name: Run forecast update
+        run: Rscript scripts/data_download.R
+
+      - name: Commit updated CSVs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data/*.csv
+
+          git diff --cached --quiet || git commit -m "Daily forecast update"
+
+          git push
