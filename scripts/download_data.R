@@ -199,7 +199,7 @@ residual_2_14_da <- residual_2_14_da %>%
 
 write.csv(
   residual_2_14_da,
-  "electricity-forecast/data/latest_forecast.csv",
+  "data/latest_forecast.csv",
   row.names = FALSE
 )
 
@@ -209,7 +209,7 @@ residual_2_14_da <- residual_2_14_da %>%
 
 write.table(
   residual_2_14_da,
-  "electricity-forecast/data/forecast_history.csv",
+  "data/forecast_history.csv",
   sep = ",",
   row.names = FALSE,
   col.names = FALSE,
@@ -226,7 +226,7 @@ today_prices <- data.frame(
 
 write.table(
   today_prices,
-  "electricity-forecast/data/tracker_price_history.csv",
+  "data/tracker_price_history.csv",
   sep = ",",
   row.names = FALSE,
   col.names = FALSE,
@@ -241,7 +241,7 @@ demand_wind_2_14_da <- demand_2_14_da %>%
 
 write.table(
   demand_wind_2_14_da,
-  "electricity-forecast/data/demand_wind_2_14_forecast_history.csv",
+  "data/demand_wind_2_14_forecast_history.csv",
   sep = ",",
   row.names = FALSE,
   col.names = FALSE,
