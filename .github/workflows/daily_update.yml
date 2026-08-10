@@ -26,7 +26,7 @@ jobs:
         run: Rscript setup.R
 
       - name: Run forecast update
-        run: Rscript electricity-forecast/scripts/data_download.R
+        run: Rscript scripts/download_data.R
 
       - name: Commit updated CSVs
         run: |
