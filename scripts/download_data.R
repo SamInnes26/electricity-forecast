@@ -107,11 +107,15 @@ demand_historic_data <- fromJSON(
 
 ##### OCTOPUS API GAS & ELECTRIC DOWNLOAD #####
 
-elec <- request(
+# elec <- request(
+#   "https://api.octopus.energy/v1/products/SILVER-26-04-01/electricity-tariffs/E-1R-SILVER-26-04-01-K/standard-unit-rates/"
+#   ) |>
+#   req_perform() |>
+#   resp_body_json()
+
+elec <- fromJSON(
   "https://api.octopus.energy/v1/products/SILVER-26-04-01/electricity-tariffs/E-1R-SILVER-26-04-01-K/standard-unit-rates/"
-  ) |>
-  req_perform() |>
-  resp_body_json()
+)
 
 today <- Sys.Date()
 
