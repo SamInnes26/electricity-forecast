@@ -1,15 +1,15 @@
 required_packages <- c(
-  "shiny",
-  "bslib",
+  # "shiny",
+  # "bslib",
   "ggplot2",
   "dplyr",
-  "DT",
+  # "DT",
   "jsonlite",
   "httr",
   "lubridate",
   "httr2",
   "tidyverse",
-  "rsconnect"
+  # "rsconnect"
 )
 
 missing_packages <- required_packages[
