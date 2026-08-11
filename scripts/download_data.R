@@ -244,14 +244,6 @@ write.table(
   append = TRUE
 )
 
-today_prices <- data.frame(
-  date = Sys.Date(),
-  elec_rate = elec_rate,
-  elec_standing_charge = elec_standing_charge,
-  gas_rate = gas_rate,
-  gas_standing_charge = gas_standing_charge
-)
-
 write.table(
   rates_to_be_appended,
   "data/tracker_price_history.csv",
