@@ -2,7 +2,7 @@ name: Daily forecast update
 
 on:
   schedule:
-    - cron: "0 10 * * *"   # 11am BST
+    - cron: "0 10 * * *"
 
   workflow_dispatch:
 
