@@ -109,6 +109,8 @@ demand_historic_data <- fromJSON(
 
 # PULL LATEST TRACKER RATES #
 
+today <- Sys.Date()
+
 elec_sc <- fromJSON(
   "https://api.octopus.energy/v1/products/SILVER-26-04-01/electricity-tariffs/E-1R-SILVER-26-04-01-K/standing-charges/"
 )
