@@ -3,7 +3,8 @@ library(dplyr)
 library(ggplot2)
 library(DT)
 
-# Load your CSV
+### Load your CSV
+
 forecast <- read.csv(
   "https://raw.githubusercontent.com/SamInnes26/electricity-forecast/main/data/latest_forecast.csv"
 )
@@ -37,7 +38,7 @@ forecast <- forecast %>%
       mean(avg_residual, na.rm = TRUE)
   )
 
-# Tracker Price Data
+### Tracker Price Data
 
 tracker <- read.csv(
   "https://raw.githubusercontent.com/SamInnes26/electricity-forecast/main/data/tracker_price_history.csv"
@@ -53,6 +54,25 @@ tracker <- tracker %>%
 # Set benchmark rates (FUSE ENERGY 15m Fixed)
 best_elec_rate <- 25.16
 best_gas_rate <- 7.66
+
+### Forecast History Data
+
+forecast_history <- read.csv(
+  "https://raw.githubusercontent.com/SamInnes26/electricity-forecast/main/data/forecast_history.csv",
+)
+
+performance_data <- forecast_history %>%
+  mutate(date = ymd(date_ymd)) %>% 
+  select(-date_ymd) %>% 
+  left_join(
+    tracker %>%
+      select(date, elec_unit_rate),
+    by = "date"
+  ) %>%
+  mutate(
+    forecast_date = ymd(forecast_date),
+    days_ahead = as.numeric(date - forecast_date)
+  )
 
 ui <- navbarPage(
   
@@ -109,7 +129,7 @@ ui <- navbarPage(
     
     br(),
     
-    h3("Tracker Unit Rates"),
+    h3("Tracker Analysis"),
     
     # Electricity line plot
     plotOutput(
@@ -147,6 +167,23 @@ ui <- navbarPage(
           height = "400px"
         )
       )
+    )
+  ),
+  # ==========================================================
+  # PAGE 3: PREDICTOR PERFORMANCE ANALYSIS
+  # ==========================================================
+  
+  tabPanel(
+    title = "Predictor Performance Analysis",
+    
+    br(),
+    
+    h3("Predictor Performance Analysis"),
+    
+    # Electricity line plot
+    plotOutput(
+      "trackerRatePlot",
+      height = "350px"
     )
   )
 )
@@ -504,6 +541,37 @@ server <- function(input, output, session) {
             colour = "grey40"
           )
         )
+    })
+    
+    output$trackerRatePlot <- renderPlot({
+      
+      ggplot(
+        performance_data,
+        aes(
+          x = avg_residual,
+          y = elec_unit_rate,
+          colour = days_ahead
+        )
+      ) +
+        geom_point(size = 3, alpha = 1) +
+        geom_smooth(
+          method = "lm",
+          formula = y ~ x,
+          se = FALSE,
+          colour = "black"
+        ) +
+        scale_colour_gradient(
+          low = "lightblue",
+          high = "darkblue",
+          name = "Days ahead"
+        ) +
+        labs(
+          title = "Tracker price vs residual demand",
+          x = "Residual demand",
+          y = "Tracker electricity price (p/kWh)"
+        ) +
+        theme_minimal()
+      
     })
   })
   
