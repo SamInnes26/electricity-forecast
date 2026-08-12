@@ -274,307 +274,309 @@ server <- function(input, output, session) {
         y = NULL
       ) 
     
-    output$elecLinePlot <- renderPlot({
-      
-      ggplot(
-        tracker,
-        aes(
-          x = date,
-          y = elec_unit_rate
-        )
-      ) +
-        
-        geom_line(
-          colour = "forestgreen",
-          linewidth = 1
-        ) +
-        
-        geom_point(
-          colour = "forestgreen",
-          size = 2
-        ) +
-        
-        geom_hline(
-          yintercept = best_elec_rate,
-          colour = "firebrick",
-          linetype = "dashed",
-          linewidth = 1
-        ) +
-        
-        annotate(
-          geom = "text",
-          x = min(tracker$date, na.rm = TRUE),
-          y = best_elec_rate,
-          label = paste0(
-            "Best alternative rate: ",
-            best_elec_rate,
-            "p/kWh"
-          ),
-          colour = "firebrick",
-          hjust = 0,
-          vjust = -0.7
-        ) +
-        
-        scale_x_date(
-          limits = c(
-            as.Date("2026-08-01"),
-            max(tracker$date, na.rm = TRUE)
-          ),
-          date_breaks = "1 week",
-          date_labels = "%d %b",
-          expand = expansion(mult = c(0.01, 0.02))
-        ) +
-        
-        labs(
-          title = "Tracker Electricity Unit Rate",
-          subtitle = "Daily Tracker rate since 1 August 2026",
-          x = NULL,
-          y = "Unit rate (p/kWh)"
-        ) +
-        
-        theme_minimal() +
-        
-        theme(
-          axis.text.x = element_text(
-            angle = 45,
-            hjust = 1
-          )
-        )
-    })
-    
-    output$gasLinePlot <- renderPlot({
-      
-      ggplot(
-        tracker,
-        aes(
-          x = date,
-          y = gas_unit_rate
-        )
-      ) +
-        
-        geom_line(
-          colour = "steelblue",
-          linewidth = 1
-        ) +
-        
-        geom_point(
-          colour = "steelblue",
-          size = 2
-        ) +
-        
-        geom_hline(
-          yintercept = best_gas_rate,
-          colour = "firebrick",
-          linetype = "dashed",
-          linewidth = 1
-        ) +
-        
-        annotate(
-          geom = "text",
-          x = min(tracker$date, na.rm = TRUE),
-          y = best_gas_rate,
-          label = paste0(
-            "Best alternative rate: ",
-            best_gas_rate,
-            "p/kWh"
-          ),
-          colour = "firebrick",
-          hjust = 0,
-          vjust = -0.7
-        ) +
-        
-        scale_x_date(
-          limits = c(
-            as.Date("2026-08-01"),
-            max(tracker$date, na.rm = TRUE)
-          ),
-          date_breaks = "1 week",
-          date_labels = "%d %b",
-          expand = expansion(mult = c(0.01, 0.02))
-        ) +
-        
-        labs(
-          title = "Tracker Gas Unit Rate",
-          subtitle = "Daily Tracker rate since 1 August 2026",
-          x = NULL,
-          y = "Unit rate (p/kWh)"
-        ) +
-        
-        theme_minimal() +
-        
-        theme(
-          axis.text.x = element_text(
-            angle = 45,
-            hjust = 1
-          )
-        )
-    })
-    
-    output$elecHistogram <- renderPlot({
-      
-      mean_elec_rate <- mean(
-        tracker$elec_unit_rate,
-        na.rm = TRUE
-      )
-      
-      percentage_below <- mean(
-        tracker$elec_unit_rate < best_elec_rate,
-        na.rm = TRUE
-      ) * 100
-      
-      ggplot(
-        tracker,
-        aes(x = elec_unit_rate)
-      ) +
-        
-        geom_histogram(
-          bins = 15,
-          fill = "forestgreen",
-          colour = "white"
-        ) +
-        
-        geom_vline(
-          xintercept = mean_elec_rate,
-          colour = "black",
-          linetype = "dotted",
-          linewidth = 1
-        ) +
-        
-        geom_vline(
-          xintercept = best_elec_rate,
-          colour = "firebrick",
-          linetype = "dashed",
-          linewidth = 1
-        ) +
-        
-        labs(
-          title = "Electricity Rate Distribution",
-          
-          subtitle = paste0(
-            round(percentage_below, 1),
-            "% of Tracker rates were below the best alternative rate"
-          ),
-          
-          x = "Unit rate (p/kWh)",
-          y = "Number of days",
-          
-          caption = paste0(
-            "Dotted line: mean (",
-            round(mean_elec_rate, 2),
-            "p) | Dashed line: best alternative rate (",
-            best_elec_rate,
-            "p)"
-          )
-        ) +
-        
-        theme_minimal() +
-        
-        theme(
-          plot.caption = element_text(
-            hjust = 0,
-            colour = "grey40"
-          )
-        )
-    })
-    
-    output$gasHistogram <- renderPlot({
-      
-      mean_gas_rate <- mean(
-        tracker$gas_unit_rate,
-        na.rm = TRUE
-      )
-      
-      percentage_below <- mean(
-        tracker$gas_unit_rate < best_gas_rate,
-        na.rm = TRUE
-      ) * 100
-      
-      ggplot(
-        tracker,
-        aes(x = gas_unit_rate)
-      ) +
-        
-        geom_histogram(
-          bins = 15,
-          fill = "steelblue",
-          colour = "white"
-        ) +
-        
-        geom_vline(
-          xintercept = mean_gas_rate,
-          colour = "black",
-          linetype = "dotted",
-          linewidth = 1
-        ) +
-        
-        geom_vline(
-          xintercept = best_gas_rate,
-          colour = "firebrick",
-          linetype = "dashed",
-          linewidth = 1
-        ) +
-        
-        labs(
-          title = "Gas Rate Distribution",
-          
-          subtitle = paste0(
-            round(percentage_below, 1),
-            "% of Tracker rates were below the best alternative rate"
-          ),
-          
-          x = "Unit rate (p/kWh)",
-          y = "Number of days",
-          
-          caption = paste0(
-            "Dotted line: mean (",
-            round(mean_gas_rate, 2),
-            "p) | Dashed line: best alternative rate (",
-            best_gas_rate,
-            "p)"
-          )
-        ) +
-        
-        theme_minimal() +
-        
-        theme(
-          plot.caption = element_text(
-            hjust = 0,
-            colour = "grey40"
-          )
-        )
-    })
-    
-    output$trackerRatePlot <- renderPlot({
-      
-      ggplot(
-        performance_data,
-        aes(
-          x = avg_residual,
-          y = elec_unit_rate,
-          colour = days_ahead
-        )
-      ) +
-        geom_point(size = 3, alpha = 1) +
-        geom_smooth(
-          method = "lm",
-          formula = y ~ x,
-          se = FALSE,
-          colour = "black"
-        ) +
-        scale_colour_gradient(
-          low = "lightblue",
-          high = "darkblue",
-          name = "Days ahead"
-        ) +
-        labs(
-          title = "Tracker price vs residual demand",
-          x = "Residual demand",
-          y = "Tracker electricity price (p/kWh)"
-        ) +
-        theme_minimal()
-      
-    })
   })
+  
+  output$elecLinePlot <- renderPlot({
+    
+    ggplot(
+      tracker,
+      aes(
+        x = date,
+        y = elec_unit_rate
+      )
+    ) +
+      
+      geom_line(
+        colour = "forestgreen",
+        linewidth = 1
+      ) +
+      
+      geom_point(
+        colour = "forestgreen",
+        size = 2
+      ) +
+      
+      geom_hline(
+        yintercept = best_elec_rate,
+        colour = "firebrick",
+        linetype = "dashed",
+        linewidth = 1
+      ) +
+      
+      annotate(
+        geom = "text",
+        x = min(tracker$date, na.rm = TRUE),
+        y = best_elec_rate,
+        label = paste0(
+          "Best alternative rate: ",
+          best_elec_rate,
+          "p/kWh"
+        ),
+        colour = "firebrick",
+        hjust = 0,
+        vjust = -0.7
+      ) +
+      
+      scale_x_date(
+        limits = c(
+          as.Date("2026-08-01"),
+          max(tracker$date, na.rm = TRUE)
+        ),
+        date_breaks = "1 week",
+        date_labels = "%d %b",
+        expand = expansion(mult = c(0.01, 0.02))
+      ) +
+      
+      labs(
+        title = "Tracker Electricity Unit Rate",
+        subtitle = "Daily Tracker rate since 1 August 2026",
+        x = NULL,
+        y = "Unit rate (p/kWh)"
+      ) +
+      
+      theme_minimal() +
+      
+      theme(
+        axis.text.x = element_text(
+          angle = 45,
+          hjust = 1
+        )
+      )
+  })
+  
+  output$gasLinePlot <- renderPlot({
+    
+    ggplot(
+      tracker,
+      aes(
+        x = date,
+        y = gas_unit_rate
+      )
+    ) +
+      
+      geom_line(
+        colour = "steelblue",
+        linewidth = 1
+      ) +
+      
+      geom_point(
+        colour = "steelblue",
+        size = 2
+      ) +
+      
+      geom_hline(
+        yintercept = best_gas_rate,
+        colour = "firebrick",
+        linetype = "dashed",
+        linewidth = 1
+      ) +
+      
+      annotate(
+        geom = "text",
+        x = min(tracker$date, na.rm = TRUE),
+        y = best_gas_rate,
+        label = paste0(
+          "Best alternative rate: ",
+          best_gas_rate,
+          "p/kWh"
+        ),
+        colour = "firebrick",
+        hjust = 0,
+        vjust = -0.7
+      ) +
+      
+      scale_x_date(
+        limits = c(
+          as.Date("2026-08-01"),
+          max(tracker$date, na.rm = TRUE)
+        ),
+        date_breaks = "1 week",
+        date_labels = "%d %b",
+        expand = expansion(mult = c(0.01, 0.02))
+      ) +
+      
+      labs(
+        title = "Tracker Gas Unit Rate",
+        subtitle = "Daily Tracker rate since 1 August 2026",
+        x = NULL,
+        y = "Unit rate (p/kWh)"
+      ) +
+      
+      theme_minimal() +
+      
+      theme(
+        axis.text.x = element_text(
+          angle = 45,
+          hjust = 1
+        )
+      )
+  })
+  
+  output$elecHistogram <- renderPlot({
+    
+    mean_elec_rate <- mean(
+      tracker$elec_unit_rate,
+      na.rm = TRUE
+    )
+    
+    percentage_below <- mean(
+      tracker$elec_unit_rate < best_elec_rate,
+      na.rm = TRUE
+    ) * 100
+    
+    ggplot(
+      tracker,
+      aes(x = elec_unit_rate)
+    ) +
+      
+      geom_histogram(
+        bins = 15,
+        fill = "forestgreen",
+        colour = "white"
+      ) +
+      
+      geom_vline(
+        xintercept = mean_elec_rate,
+        colour = "black",
+        linetype = "dotted",
+        linewidth = 1
+      ) +
+      
+      geom_vline(
+        xintercept = best_elec_rate,
+        colour = "firebrick",
+        linetype = "dashed",
+        linewidth = 1
+      ) +
+      
+      labs(
+        title = "Electricity Rate Distribution",
+        
+        subtitle = paste0(
+          round(percentage_below, 1),
+          "% of Tracker rates were below the best alternative rate"
+        ),
+        
+        x = "Unit rate (p/kWh)",
+        y = "Number of days",
+        
+        caption = paste0(
+          "Dotted line: mean (",
+          round(mean_elec_rate, 2),
+          "p) | Dashed line: best alternative rate (",
+          best_elec_rate,
+          "p)"
+        )
+      ) +
+      
+      theme_minimal() +
+      
+      theme(
+        plot.caption = element_text(
+          hjust = 0,
+          colour = "grey40"
+        )
+      )
+  })
+  
+  output$gasHistogram <- renderPlot({
+    
+    mean_gas_rate <- mean(
+      tracker$gas_unit_rate,
+      na.rm = TRUE
+    )
+    
+    percentage_below <- mean(
+      tracker$gas_unit_rate < best_gas_rate,
+      na.rm = TRUE
+    ) * 100
+    
+    ggplot(
+      tracker,
+      aes(x = gas_unit_rate)
+    ) +
+      
+      geom_histogram(
+        bins = 15,
+        fill = "steelblue",
+        colour = "white"
+      ) +
+      
+      geom_vline(
+        xintercept = mean_gas_rate,
+        colour = "black",
+        linetype = "dotted",
+        linewidth = 1
+      ) +
+      
+      geom_vline(
+        xintercept = best_gas_rate,
+        colour = "firebrick",
+        linetype = "dashed",
+        linewidth = 1
+      ) +
+      
+      labs(
+        title = "Gas Rate Distribution",
+        
+        subtitle = paste0(
+          round(percentage_below, 1),
+          "% of Tracker rates were below the best alternative rate"
+        ),
+        
+        x = "Unit rate (p/kWh)",
+        y = "Number of days",
+        
+        caption = paste0(
+          "Dotted line: mean (",
+          round(mean_gas_rate, 2),
+          "p) | Dashed line: best alternative rate (",
+          best_gas_rate,
+          "p)"
+        )
+      ) +
+      
+      theme_minimal() +
+      
+      theme(
+        plot.caption = element_text(
+          hjust = 0,
+          colour = "grey40"
+        )
+      )
+  })
+  
+  output$trackerRatePlot <- renderPlot({
+    
+    ggplot(
+      performance_data,
+      aes(
+        x = avg_residual,
+        y = elec_unit_rate,
+        colour = days_ahead
+      )
+    ) +
+      geom_point(size = 3, alpha = 1) +
+      geom_smooth(
+        method = "lm",
+        formula = y ~ x,
+        se = FALSE,
+        colour = "black"
+      ) +
+      scale_colour_gradient(
+        low = "lightblue",
+        high = "darkblue",
+        name = "Days ahead"
+      ) +
+      labs(
+        title = "Tracker price vs residual demand",
+        x = "Residual demand",
+        y = "Tracker electricity price (p/kWh)"
+      ) +
+      theme_minimal()
+    
+  })
+  
   
   output$rankTable <- renderDT({
     
