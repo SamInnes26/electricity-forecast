@@ -31,13 +31,7 @@ forecast <- forecast %>%
     
   )
 
-forecast <- forecast %>%
-  
-  mutate(
-    relative_residual =
-      avg_residual -
-      mean(avg_residual, na.rm = TRUE)
-  )
+
 
 ### Tracker Price Data
 
@@ -74,6 +68,25 @@ performance_data <- forecast_history %>%
     forecast_date = ymd(forecast_date),
     days_ahead = as.numeric(date - forecast_date)
   )
+
+mu <- mean(performance_data$avg_residual)
+sigma <- sd(performance_data$avg_residual)
+
+forecast <- forecast %>%
+  
+  mutate(
+    avg_residual_z_score =
+      (avg_residual - mu)/sigma
+  )
+
+
+# Fit model
+model <- lm(elec_unit_rate ~ avg_residual, data = performance_data)
+r2 <- summary(model)$r.squared
+
+# Coordinates for label placement
+x_pos <- max(performance_data$avg_residual, na.rm = TRUE)
+y_pos <- min(performance_data$elec_unit_rate, na.rm = TRUE)
 
 ui <- navbarPage(
   
@@ -215,7 +228,7 @@ server <- function(input, output, session) {
       forecast,
       aes(
         x = date_ymd,
-        y = relative_residual
+        y = avg_residual_z_score
       )
     ) +
       
@@ -255,17 +268,19 @@ server <- function(input, output, session) {
       annotate(
         "text",
         x = min(forecast$date_ymd),
-        y = max(forecast$relative_residual),
+        y = max(forecast$avg_residual_z_score),
         label = "↑ Dearer",
-        hjust = 0
+        hjust = 0,
+        size = unit(9, "pt")
       ) +
       
       annotate(
         "text",
         x = min(forecast$date_ymd),
-        y = min(forecast$relative_residual),
+        y = min(forecast$avg_residual_z_score),
         label = "↓ Cheaper",
-        hjust = 0
+        hjust = 0, 
+        size = unit(9, "pt")
       ) +
       
       labs(
@@ -561,6 +576,16 @@ server <- function(input, output, session) {
         method = "lm",
         formula = y ~ x,
         se = FALSE,
+        colour = "black"
+      ) +
+      annotate(
+        "text",
+        x = x_pos,
+        y = y_pos,
+        label = paste0("R² = ", round(r2, 3)),
+        hjust = 1.1,
+        vjust = -0.5,
+        size = 5,
         colour = "black"
       ) +
       scale_colour_gradient(
