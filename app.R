@@ -66,7 +66,8 @@ performance_data <- forecast_history %>%
   ) %>%
   mutate(
     forecast_date = ymd(forecast_date),
-    days_ahead = as.numeric(date - forecast_date)
+    days_ahead = as.numeric(date - forecast_date),
+    weight = exp(-0.4 * days_ahead)
   )
 
 mu <- mean(performance_data$avg_residual)
@@ -81,7 +82,11 @@ forecast <- forecast %>%
 
 
 # Fit model
-model <- lm(elec_unit_rate ~ avg_residual, data = performance_data)
+model <- lm(
+  elec_unit_rate ~ avg_residual,
+  data = performance_data,
+  weights = weight
+)
 r2 <- summary(model)$r.squared
 
 # Coordinates for label placement
@@ -575,6 +580,7 @@ server <- function(input, output, session) {
       geom_smooth(
         method = "lm",
         formula = y ~ x,
+        aes(weight = weight),
         se = FALSE,
         colour = "black"
       ) +
@@ -589,8 +595,8 @@ server <- function(input, output, session) {
         colour = "black"
       ) +
       scale_colour_gradient(
-        low = "lightblue",
-        high = "darkblue",
+        high = "lightblue",
+        low = "darkblue",
         name = "Days ahead"
       ) +
       labs(
