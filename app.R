@@ -67,7 +67,7 @@ performance_data <- forecast_history %>%
   mutate(
     forecast_date = ymd(forecast_date),
     days_ahead = as.numeric(date - forecast_date),
-    weight = exp(-0.4 * days_ahead)
+    da_weight = exp(-0.4 * days_ahead)
   )
 
 mu <- mean(performance_data$avg_residual)
@@ -85,13 +85,97 @@ forecast <- forecast %>%
 model <- lm(
   elec_unit_rate ~ avg_residual,
   data = performance_data,
-  weights = weight
+  weights = da_weight
 )
 r2 <- summary(model)$r.squared
 
 # Coordinates for label placement
 x_pos <- max(performance_data$avg_residual, na.rm = TRUE)
 y_pos <- min(performance_data$elec_unit_rate, na.rm = TRUE)
+
+
+# actual ranking
+
+performance_data <- performance_data |>
+  group_by(forecast_date) |>
+  mutate(
+    rank_14_day_actual = if(
+      sum(!is.na(elec_unit_rate)) == 14
+    ) {
+      rank(elec_unit_rate, ties.method = "min")
+    } else {
+      rep(NA_integer_, n())
+    },
+    
+    rank_7_day_actual = if(
+      sum(!is.na(elec_unit_rate[days_ahead <= 7])) == 7
+    ) {
+      replace(
+        rep(NA_integer_, n()),
+        days_ahead <= 7,
+        rank(
+          elec_unit_rate[days_ahead <= 7],
+          ties.method = "min"
+        )
+      )
+    } else {
+      rep(NA_integer_, n())
+    }
+  ) |>
+  ungroup()
+
+
+capture_rate_data <- performance_data |>
+  mutate(
+    rank_7_day_cheapest_hit = as.integer(rank_7_day & rank_7_day_actual == 1),
+    rank_7_day_cheapest_2 = as.integer(rank_7_day == 1 & rank_7_day_actual <= 2),
+    rank_7_day_cheap_range = as.integer(rank_7_day <= 2 & rank_7_day_actual <= 2),
+    rank_7_day_cheap_range_relaxed = as.integer(rank_7_day <= 2 & rank_7_day_actual <= 3),
+    rank_14_day_cheapest_hit = as.integer(rank_14_day == 1 & rank_14_day_actual == 1),
+    rank_14_day_cheapest_4 = as.integer(rank_14_day == 1 & rank_14_day_actual <= 4),
+    rank_14_day_cheap_range = as.integer(rank_14_day <= 4 & rank_14_day_actual <= 4),
+    rank_14_day_cheap_range_relaxed = as.integer(rank_14_day <= 4 & rank_14_day_actual <= 6),
+  ) 
+
+rank_7_day_cheapest_hit_rate <- capture_rate_data |> 
+  filter(rank_7_day == 1) |> 
+  summarise(rate = 100*round(mean(rank_7_day_cheapest_hit, na.rm = T),4)) |> 
+  pull()
+
+rank_7_day_cheapest_2_rate <- capture_rate_data |> 
+  filter(rank_7_day == 1) |> 
+  summarise(rate = 100*round(mean(rank_7_day_cheapest_2, na.rm = T),4)) |> 
+  pull()
+
+rank_7_day_cheap_range_rate <- capture_rate_data |> 
+  filter(rank_7_day <= 2) |> 
+  summarise(rate = 100*round(mean(rank_7_day_cheap_range, na.rm = T),4)) |> 
+  pull()
+
+rank_7_day_cheap_range_relaxed_rate <- capture_rate_data |> 
+  filter(rank_7_day <= 2) |> 
+  summarise(rate = 100*round(mean(rank_7_day_cheap_range_relaxed, na.rm = T),4)) |> 
+  pull()
+
+rank_14_day_cheapest_hit_rate <- capture_rate_data |> 
+  filter(rank_7_day == 1) |> 
+  summarise(rate = 100*round(mean(rank_14_day_cheapest_hit, na.rm = T),4)) |> 
+  pull()
+
+rank_14_day_cheapest_4_rate <- capture_rate_data |> 
+  filter(rank_7_day == 1) |> 
+  summarise(rate = 100*round(mean(rank_14_day_cheapest_4, na.rm = T),4)) |> 
+  pull()
+
+rank_14_day_cheap_range_rate <- capture_rate_data |> 
+  filter(rank_7_day <= 4) |> 
+  summarise(rate = 100*round(mean(rank_14_day_cheap_range, na.rm = T),4)) |> 
+  pull()
+
+rank_14_day_cheap_range_relaxed_rate <- capture_rate_data |> 
+  filter(rank_7_day <= 6) |> 
+  summarise(rate = 100*round(mean(rank_14_day_cheap_range_relaxed, na.rm = T),4)) |> 
+  pull()
 
 ui <- navbarPage(
   
@@ -199,11 +283,111 @@ ui <- navbarPage(
     
     h3("Predictor Performance Analysis"),
     
+    br(),
+    
+    h4("7-Day Forecast"),
+    
+    br(),
+    
+    fluidRow(
+      
+      column(
+        3,
+        wellPanel(
+          h4("Cheapest Day Accuracy"),
+          h5("Percentage of forecasts where the predicted cheapest day was actually the cheapest day."),
+          textOutput("rank_7_day_cheapest_hit_rate")
+        )
+      ),
+      
+      column(
+        3,
+        wellPanel(
+          h4("Cheapest Day Top-2 Accuracy"),
+          h5("Percentage of forecasts where the predicted cheapest day was among the two cheapest actual days."),
+          textOutput("rank_7_day_cheapest_2_rate")
+        )
+      ),
+      
+      column(
+        3,
+        wellPanel(
+          h4("Cheapest Pair Capture Rate"),
+          h5("Percentage of the predicted cheapest two days that were actually the two cheapest days."),
+          textOutput("rank_7_day_cheap_range_rate")
+        )
+      ),
+      
+      column(
+        3,
+        wellPanel(
+          h4("Cheapest Pair Capture Rate (Relaxed)"),
+          h5("Percentage of the predicted cheapest two days that were actually among the three cheapest days."),
+          textOutput("rank_7_day_cheap_range_relaxed_rate")
+        )
+      ),
+      
+      
+    ),
+    
+    br(),
+    
+    h4("14-Day Forecast"),
+    
+    br(),
+    
+    fluidRow(
+      
+      column(
+        3,
+        wellPanel(
+          h4("Cheapest Day Accuracy"),
+          h5("Percentage of forecasts where the predicted cheapest day was actually the cheapest day."),
+          textOutput("rank_14_day_cheapest_hit_rate")
+        )
+      ),
+      
+      column(
+        3,
+        wellPanel(
+          h4("Cheapest Day Top-4 Accuracy"),
+          h5("Percentage of forecasts where the predicted cheapest day was among the four cheapest actual days."),
+          textOutput("rank_14_day_cheapest_4_rate")
+        )
+      ),
+      
+      column(
+        3,
+        wellPanel(
+          h4("Cheapest Period Capture Rate"),
+          h5("Percentage of the predicted cheapest four days that were actually the four cheapest days."),
+          textOutput("rank_14_day_cheap_range_rate")
+        )
+      ),
+      
+      column(
+        3,
+        wellPanel(
+          h4("Cheapest Period Capture Rate (Relaxed)"),
+          h5("Percentage of the predicted cheapest four days that were actually among the six cheapest days."),
+          textOutput("rank_14_day_cheap_range_relaxed_rate")
+        )
+      ),
+      
+      
+    ),
+    
+    
+    br(),
+    
     # Electricity line plot
     plotOutput(
       "trackerRatePlot",
       height = "350px"
-    )
+    ),
+    
+    
+
   )
 )
 
@@ -566,6 +750,39 @@ server <- function(input, output, session) {
       )
   })
   
+  output$rank_7_day_cheapest_hit_rate <- renderText({
+    paste0(round(rank_7_day_cheapest_hit_rate, 4), "%")
+  })
+  
+  output$rank_7_day_cheapest_2_rate <- renderText({
+    paste0(round(rank_7_day_cheapest_2_rate, 4), "%")
+  })
+  
+  output$rank_7_day_cheap_range_rate <- renderText({
+    paste0(round(rank_7_day_cheap_range_rate, 4), "%")
+  })
+  
+  output$rank_7_day_cheap_range_relaxed_rate <- renderText({
+    paste0(round(rank_7_day_cheap_range_relaxed_rate, 4), "%")
+  })
+  
+  output$rank_14_day_cheapest_hit_rate <- renderText({
+    paste0(round(rank_14_day_cheapest_hit_rate, 4), "%")
+  })
+  
+  output$rank_14_day_cheapest_4_rate <- renderText({
+    paste0(round(rank_14_day_cheapest_4_rate, 4), "%")
+  })
+  
+  output$rank_14_day_cheap_range_rate <- renderText({
+    paste0(round(rank_14_day_cheap_range_rate, 4), "%")
+  })
+  
+  output$rank_14_day_cheap_range_relaxed_rate <- renderText({
+    paste0(round(rank_14_day_cheap_range_relaxed_rate, 4), "%")
+  })
+  
+  
   output$trackerRatePlot <- renderPlot({
     
     ggplot(
@@ -580,7 +797,7 @@ server <- function(input, output, session) {
       geom_smooth(
         method = "lm",
         formula = y ~ x,
-        aes(weight = weight),
+        aes(weight = da_weight),
         se = FALSE,
         colour = "black"
       ) +
