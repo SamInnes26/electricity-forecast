@@ -926,7 +926,7 @@ server <- function(input, output, session) {
           "over the following seven days"
         ),
         x = NULL,
-        y = "Tracker rate"
+        y = "Unit rate (p/kWh)"
       ) +
       
       theme_minimal() +
