@@ -177,6 +177,41 @@ rank_14_day_cheap_range_relaxed_rate <- capture_rate_data |>
   summarise(rate = 100*round(mean(rank_14_day_cheap_range_relaxed, na.rm = T),4)) |> 
   pull()
 
+
+prediction_arrows <- forecast_history |>
+  mutate(
+    forecast_date = ymd(forecast_date),
+    date_ymd = ymd(date_ymd)
+  ) |>
+  filter(rank_7_day == 1) |>
+  left_join(
+    tracker |>
+      select(
+        forecast_date = date,
+        elec_unit_rate_forecast_date = elec_unit_rate
+      ),
+    by = "forecast_date"
+  ) |>
+  left_join(
+    tracker |>
+      select(
+        date_ymd = date,
+        elec_unit_rate_fc_min_date = elec_unit_rate
+      ),
+    by = "date_ymd"
+  ) |>
+  filter(
+    !is.na(elec_unit_rate_forecast_date),
+    !is.na(elec_unit_rate_fc_min_date)
+  ) |>
+  select(
+    forecast_date,
+    date_ymd,
+    avg_residual,
+    elec_unit_rate_forecast_date,
+    elec_unit_rate_fc_min_date
+  )
+
 ui <- navbarPage(
   
   title = "Electricity Price Predictor",
@@ -224,15 +259,15 @@ ui <- navbarPage(
   
   
   # ==========================================================
-  # PAGE 2: TRACKER ANALYSIS
+  # PAGE 2: TRACKER RATE ANALYSIS
   # ==========================================================
   
   tabPanel(
-    title = "Tracker Analysis",
+    title = "Tracker Rate Analysis",
     
     br(),
     
-    h3("Tracker Analysis"),
+    h3("Tracker Rate Analysis"),
     
     # Electricity line plot
     plotOutput(
@@ -386,6 +421,13 @@ ui <- navbarPage(
       height = "350px"
     ),
     
+    br(),
+    
+    plotOutput(
+      "predictionArrowsPlot",
+      height = "350px"
+    )
+    
     
 
   )
@@ -422,8 +464,17 @@ server <- function(input, output, session) {
     ) +
       
       geom_line(
+        data = forecast |> slice(1:7),
         colour = "forestgreen",
-        linewidth = 1
+        linewidth = 1,
+        linetype = "solid"
+      ) +
+      
+      geom_line(
+        data = forecast |> slice(7:n()),
+        colour = "forestgreen",
+        linewidth = 1,
+        linetype = "dashed"
       ) +
       
       geom_point(
@@ -823,6 +874,69 @@ server <- function(input, output, session) {
       ) +
       theme_minimal()
     
+  })
+  
+  output$predictionArrowsPlot <- renderPlot({
+    ggplot(
+      tracker,
+      aes(
+        x = date,
+        y = elec_unit_rate
+      )
+    ) +
+      
+      geom_line(
+        colour = "grey40",
+        linewidth = 1
+      ) +
+      
+      geom_point(
+        colour = "grey40",
+        size = 2
+      ) +
+      
+      geom_curve(
+        data = prediction_arrows,
+        aes(
+          x = forecast_date,
+          y = elec_unit_rate_forecast_date,
+          xend = date_ymd,
+          yend = elec_unit_rate_fc_min_date
+        ),
+        inherit.aes = FALSE,
+        colour = "forestgreen",
+        linewidth = 0.7,
+        curvature = -0.15,
+        alpha = 0.65,
+        arrow = arrow(
+          type = "closed",
+          length = unit(0.12, "inches")
+        )
+      ) +
+      
+      scale_x_date(
+        date_breaks = "1 week",
+        date_labels = "%d %b"
+      ) +
+      
+      labs(
+        title = "Predicted Cheapest Electricity Days",
+        subtitle = paste(
+          "Each arrow shows the cheapest day predicted",
+          "over the following seven days"
+        ),
+        x = NULL,
+        y = "Tracker rate"
+      ) +
+      
+      theme_minimal() +
+      
+      theme(
+        axis.text.x = element_text(
+          angle = 45,
+          hjust = 1
+        )
+      )
   })
   
   
