@@ -109,8 +109,6 @@ demand_historic_data <- fromJSON(
 
 # PULL LATEST TRACKER RATES #
 
-today <- Sys.Date()
-
 elec_sc <- fromJSON(
   "https://api.octopus.energy/v1/products/SILVER-26-04-01/electricity-tariffs/E-1R-SILVER-26-04-01-K/standing-charges/"
 )
@@ -200,9 +198,9 @@ residual_2_14_da <- demand_2_14_da %>%
   drop_na() %>% 
   mutate(
     residual = demand - wind,
-    date_ymd = as.Date(date)
+    date = as.Date(date)
   ) %>% 
-  group_by(date_ymd) %>% 
+  group_by(date) %>% 
   summarise(
     avg_residual = mean(residual),
     .groups = "drop"
@@ -212,15 +210,15 @@ residual_2_14_da <- demand_2_14_da %>%
   )
 
 first_7_days <- residual_2_14_da %>%
-  arrange(date_ymd) %>% 
+  arrange(date) %>% 
   slice(1:7) %>%
   mutate(
     rank_7_day = rank(avg_residual, ties.method = "min")
   ) %>%
-  select(date_ymd, rank_7_day)
+  select(date, rank_7_day)
 
 residual_2_14_da <- residual_2_14_da %>% 
-  left_join(first_7_days, by = "date_ymd")
+  left_join(first_7_days, by = "date")
 
 
 ###### CSV WRITING ######
@@ -231,9 +229,9 @@ write.csv(
   row.names = FALSE
 )
 
-residual_2_14_da <- residual_2_14_da %>% 
-  mutate(forecast_date = today) %>% 
-  select(c("forecast_date", "date_ymd", "avg_residual", "rank_14_day", "rank_7_day"))
+# residual_2_14_da <- residual_2_14_da %>% 
+#   mutate(forecast_date = today) %>% 
+#   select(c("forecast_date", "date_ymd", "avg_residual", "rank_14_day", "rank_7_day"))
 
 write.table(
   residual_2_14_da,
@@ -242,6 +240,14 @@ write.table(
   row.names = FALSE,
   col.names = FALSE,
   append = TRUE
+)
+
+today_prices <- data.frame(
+  date = Sys.Date(),
+  elec_rate = elec_rate,
+  elec_standing_charge = elec_standing_charge,
+  gas_rate = gas_rate,
+  gas_standing_charge = gas_standing_charge
 )
 
 write.table(
