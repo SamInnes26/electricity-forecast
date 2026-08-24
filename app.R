@@ -10,7 +10,7 @@ forecast <- read.csv(
   "https://raw.githubusercontent.com/SamInnes26/electricity-forecast/main/data/latest_forecast.csv"
 )
 
-forecast$date_ymd <- as.Date(forecast$date_ymd)
+forecast$date <- as.Date(forecast$date)
 
 forecast <- forecast %>%
   
@@ -39,10 +39,10 @@ tracker <- read.csv(
   "https://raw.githubusercontent.com/SamInnes26/electricity-forecast/main/data/tracker_price_history.csv"
 )
 
+tracker$date <- as.Date(tracker$date)
+
+
 tracker <- tracker %>%
-  mutate(
-    date = as.Date(date)
-  ) %>%
   filter(date >= as.Date("2026-08-01")) %>%
   arrange(date)
 
@@ -56,16 +56,18 @@ forecast_history <- read.csv(
   "https://raw.githubusercontent.com/SamInnes26/electricity-forecast/main/data/forecast_history.csv",
 )
 
+forecast_history$forecast_date <- as.Date(forecast_history$forecast_date)
+forecast_history$date <- as.Date(forecast_history$date)
+
+
 performance_data <- forecast_history %>%
-  mutate(date = ymd(date_ymd)) %>% 
-  select(-date_ymd) %>% 
   left_join(
     tracker %>%
       select(date, elec_unit_rate),
     by = "date"
   ) %>%
   mutate(
-    forecast_date = ymd(forecast_date),
+    # forecast_date = ymd(forecast_date),
     days_ahead = as.numeric(date - forecast_date),
     da_weight = exp(-0.4 * days_ahead)
   )
@@ -179,10 +181,10 @@ rank_14_day_cheap_range_relaxed_rate <- capture_rate_data |>
 
 
 prediction_arrows <- forecast_history |>
-  mutate(
-    forecast_date = ymd(forecast_date),
-    date_ymd = ymd(date_ymd)
-  ) |>
+  # mutate(
+  #   forecast_date = ymd(forecast_date),
+  #   date_ymd = ymd(date_ymd)
+  # ) |>
   filter(rank_7_day == 1) |>
   left_join(
     tracker |>
@@ -195,10 +197,10 @@ prediction_arrows <- forecast_history |>
   left_join(
     tracker |>
       select(
-        date_ymd = date,
+        date = date,
         elec_unit_rate_fc_min_date = elec_unit_rate
       ),
-    by = "date_ymd"
+    by = "date"
   ) |>
   filter(
     !is.na(elec_unit_rate_forecast_date),
@@ -206,7 +208,7 @@ prediction_arrows <- forecast_history |>
   ) |>
   select(
     forecast_date,
-    date_ymd,
+    date,
     avg_residual,
     elec_unit_rate_forecast_date,
     elec_unit_rate_fc_min_date
@@ -439,14 +441,14 @@ server <- function(input, output, session) {
     best <- forecast %>%
       filter(rank_7_day == min(rank_7_day, na.rm = TRUE))
     
-    paste(format(best$date_ymd, "%d %b %Y"))
+    paste(format(best$date, "%d %b %Y"))
   })
   
   output$best14 <- renderText({
     best <- forecast %>%
       filter(rank_14_day == min(rank_14_day))
     
-    paste(format(best$date_ymd, "%d %b %Y"))
+    paste(format(best$date, "%d %b %Y"))
   })
   
   output$lowest_residual <- renderText({
@@ -458,7 +460,7 @@ server <- function(input, output, session) {
     ggplot(
       forecast,
       aes(
-        x = date_ymd,
+        x = date,
         y = avg_residual_z_score
       )
     ) +
@@ -507,7 +509,7 @@ server <- function(input, output, session) {
       
       annotate(
         "text",
-        x = min(forecast$date_ymd),
+        x = min(forecast$date),
         y = max(forecast$avg_residual_z_score),
         label = "↑ Dearer",
         hjust = 0,
@@ -516,7 +518,7 @@ server <- function(input, output, session) {
       
       annotate(
         "text",
-        x = min(forecast$date_ymd),
+        x = min(forecast$date),
         y = min(forecast$avg_residual_z_score),
         label = "↓ Cheaper",
         hjust = 0, 
@@ -900,7 +902,7 @@ server <- function(input, output, session) {
         aes(
           x = forecast_date,
           y = elec_unit_rate_forecast_date,
-          xend = date_ymd,
+          xend = date,
           yend = elec_unit_rate_fc_min_date
         ),
         inherit.aes = FALSE,
@@ -944,10 +946,10 @@ server <- function(input, output, session) {
     
     forecast %>%
       
-      arrange(date_ymd) %>%
+      arrange(date) %>%
       
       transmute(
-        Date = format(date_ymd, "%a %d %b"),
+        Date = format(date, "%a %d %b"),
         `7 Day Outlook` = outlook_7,
         `14 Day Outlook` = outlook_14
       )
