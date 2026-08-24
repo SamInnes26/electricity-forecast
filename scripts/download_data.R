@@ -1,6 +1,8 @@
 library(httr2)
 library(jsonlite)
-library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(tidyr)
 
 
 ##### NESO API FORECAST & HISTORIC WIND DATA DOWNLOAD #####
@@ -229,10 +231,6 @@ write.csv(
   row.names = FALSE
 )
 
-# residual_2_14_da <- residual_2_14_da %>% 
-#   mutate(forecast_date = today) %>% 
-#   select(c("forecast_date", "date_ymd", "avg_residual", "rank_14_day", "rank_7_day"))
-
 write.table(
   residual_2_14_da,
   "data/forecast_history.csv",
@@ -240,14 +238,6 @@ write.table(
   row.names = FALSE,
   col.names = FALSE,
   append = TRUE
-)
-
-today_prices <- data.frame(
-  date = Sys.Date(),
-  elec_rate = elec_rate,
-  elec_standing_charge = elec_standing_charge,
-  gas_rate = gas_rate,
-  gas_standing_charge = gas_standing_charge
 )
 
 write.table(
@@ -262,7 +252,7 @@ write.table(
 
 demand_wind_2_14_da <- demand_2_14_da %>% 
   full_join(wind_2_14_da, by = "date") %>% 
-  mutate(forecast_date = today) %>% 
+  mutate(forecast_date = Sys.Date()) %>% 
   arrange(date) %>% 
   select(c("forecast_date", "date", "demand", "wind"))
 
