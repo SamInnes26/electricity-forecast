@@ -1,4 +1,4 @@
-"forecast_date","date_ymd","avg_residual","rank_14_day","rank_7_day"
+"forecast_date","date","avg_residual","rank_14_day","rank_7_day"
 2026-08-03,2026-08-04,12202,2,2
 2026-08-03,2026-08-05,9691.70833333333,1,1
 2026-08-03,2026-08-06,14785.8333333333,5,5
