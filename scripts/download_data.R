@@ -222,7 +222,6 @@ first_7_days <- residual_2_14_da %>%
 residual_2_14_da <- residual_2_14_da %>% 
   left_join(first_7_days, by = "date")
 
-
 ###### CSV WRITING ######
 
 write.csv(
@@ -233,16 +232,31 @@ write.csv(
 
 residual_2_14_da <- residual_2_14_da %>% 
   mutate(forecast_date = Sys.Date()) %>% 
-  select(c("forecast_date", "date_ymd", "avg_residual", "rank_14_day", "rank_7_day"))
+  select(c("forecast_date", "date", "avg_residual", "rank_14_day", "rank_7_day"))
 
-write.table(
-  residual_2_14_da,
-  "data/forecast_history.csv",
-  sep = ",",
-  row.names = FALSE,
-  col.names = FALSE,
-  append = TRUE
+# CHECK EXISTING DATE RANGE & REMOVE OVERALP FROM DOWNLOADED DATA #
+
+current_forecast_history <- read.csv("data/forecast_history.csv")
+
+# current_latest_date <- ymd(current_forecast_history$forecast_date[nrow(current_forecast_history)])
+current_latest_date <- max(
+  ymd(current_forecast_history$forecast_date),
+  na.rm = TRUE
 )
+
+
+if(current_latest_date != Sys.Date()){
+  write.table(
+    residual_2_14_da,
+    "data/forecast_history.csv",
+    sep = ",",
+    row.names = FALSE,
+    col.names = FALSE,
+    append = TRUE
+  ) 
+}
+
+
 
 write.table(
   rates_to_be_appended,
