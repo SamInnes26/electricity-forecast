@@ -231,6 +231,10 @@ write.csv(
   row.names = FALSE
 )
 
+residual_2_14_da <- residual_2_14_da %>% 
+  mutate(forecast_date = Sys.Date()) %>% 
+  select(c("forecast_date", "date_ymd", "avg_residual", "rank_14_day", "rank_7_day"))
+
 write.table(
   residual_2_14_da,
   "data/forecast_history.csv",
